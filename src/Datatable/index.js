@@ -18,28 +18,47 @@ const DataTable = ()=>{ //Defining States
     useEffect(()=>{
         loadData();
     },[])
-
+    
     const addData = async () => { //Add new method
         try {
+            
         const row = await form.validateFields();
+       
         const newData = {
         id: modifiedData.length + 1,
         tasktitle: row.tasktitle,
         description: row.description,
         duedate: row.duedate,
         tag: row.tag,
-        status: row.status,
-        age: Math.floor(Math.random()*6)+20,
+        status: "OPEN",//Default Value
         key: modifiedData.length + 1,
-        timestamp: Date()
+        timestamp: Date(),
         };
-        setGridData([...modifiedData, newData]);
-        form.resetFields();
-        message.success("Data added successfully!");
-        } catch (error) {
-        console.log("error", error);
-        }
-        };
+     
+        // Find the index where the new item should be inserted
+        let insertIndex = modifiedData.length;
+        for (let i = 0; i < modifiedData.length; i++) {
+        const item = modifiedData[i];
+        const sortOrder = sortedInfo.order === "descend" ? -1 : 1;
+        if (item[sortedInfo.columnKey] > newData[sortedInfo.columnKey]) {
+        insertIndex = i;
+        break;
+      }
+    }
+
+
+
+        // Insert the new item at the found index
+    const newDataArray = [...modifiedData];
+    newDataArray.splice(insertIndex, 0, newData);
+
+    setGridData(newDataArray);
+    form.resetFields();
+    message.success("Data added successfully!");
+  } catch (error) {
+    console.log("error", error);
+  }
+};
 
         
 
@@ -54,7 +73,7 @@ const DataTable = ()=>{ //Defining States
 
     const dataWithAge = gridData.map((item) => ({
         ...item,
-        age: Math.floor(Math.random()*6)+20
+       
     }));
     const modifiedData=dataWithAge.map(({body, ...item})=>({
         ...item,
@@ -77,7 +96,7 @@ const DataTable = ()=>{ //Defining States
     const cancel = () => {
         setEditRowKey("");
     };
-    const save = async (key) => {
+    const save = async (key) => { //Save Function
         try {
             const row = await form.validateFields();
             const newData = [...modifiedData];
@@ -92,7 +111,7 @@ const DataTable = ()=>{ //Defining States
             console.log("error",error)
         }
     };
-    const edit = (record) => { //Edit
+    const edit = (record) => { //Edit Function
         form.setFieldsValue({
             tasktitle: "",
             description: "",
@@ -111,7 +130,7 @@ const DataTable = ()=>{ //Defining States
     
     
 
-    const columns=[{
+    const columns=[{  //Columns
         title: "ID",
         dataIndex: "id",
     },
@@ -119,7 +138,9 @@ const DataTable = ()=>{ //Defining States
         title: "TimeStamp",
         dataIndex: "timestamp",
         align: "center",
-        editTable: false
+        editTable: false,
+        sorter: (a,b) => a.timestamp.length-b.timestamp.length,
+        sortOrder: sortedInfo.columnkey === "timestamp" && sortedInfo.order,
     },
     {
         title: "Title",
@@ -158,6 +179,7 @@ const DataTable = ()=>{ //Defining States
         dataIndex: "status",
         align: "center",
         editTable: true,
+    
         filters: [
             {text: "OPEN", value: "OPEN"},
             {text: "DONE", value: "DONE"},
@@ -231,10 +253,15 @@ const DataTable = ()=>{ //Defining States
                     <Form.Item name={dataIndex} style={{margin: 0}} rules={[{
                         required: dataIndex === "tasktitle"||dataIndex === "description",
                         message: `Please input some value in ${title} field`,
+                        max: 100 === "tasktitle",//max length 100 for title                        
+                        max:1000 === "description",//max length 1000 for description
+                        
                     }]}>  
                         {input}
                     </Form.Item>
+                    
                 ):(children)}
+                
             </td>
         )
     }
@@ -253,7 +280,7 @@ const DataTable = ()=>{ //Defining States
         }
     }
 
-    const globalSearch = () =>{
+    const globalSearch = () =>{    //Search Function
         filteredData = modifiedData.filter((value) => {
             return (
                 value.tasktitle.toLowerCase().includes(searchText.toLowerCase()) ||
